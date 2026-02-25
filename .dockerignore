@@ -1,60 +1,44 @@
-.git
-.worktrees
-.bun-cache
-.bun
-.tmp
-**/.tmp
-.DS_Store
-**/.DS_Store
-*.png
-*.jpg
-*.jpeg
-*.webp
-*.gif
-*.mp4
-*.mov
-*.wav
-*.mp3
+# Dependencies
 node_modules
-**/node_modules
 .pnpm-store
-**/.pnpm-store
-.turbo
-**/.turbo
-.cache
-**/.cache
-.next
-**/.next
+
+# Build outputs
+dist
+build
+
+# Test files
 coverage
-**/coverage
+*.test.ts
+*.spec.ts
+
+# Development
+.git
+.github
+.agent
+.pi
+
+# Docs
+docs
+*.md
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Extensions (not needed for Railway)
+extensions
+
+# Apps (not needed for Railway)
+apps
+
+# Test fixtures
+test
+
+# Temporary files
 *.log
 tmp
-**/tmp
-
-# build artifacts
-dist
-**/dist
-apps/macos/.build
-apps/ios/build
-**/*.trace
-
-# large app trees not needed for CLI build
-apps/
-assets/
-Peekaboo/
-Swabble/
-Core/
-Users/
-vendor/
-
-# Needed for building the Canvas A2UI bundle during Docker image builds.
-# Keep the rest of apps/ and vendor/ excluded to avoid a large build context.
-!apps/shared/
-!apps/shared/OpenClawKit/
-!apps/shared/OpenClawKit/Tools/
-!apps/shared/OpenClawKit/Tools/CanvasA2UI/
-!apps/shared/OpenClawKit/Tools/CanvasA2UI/**
-!vendor/a2ui/
-!vendor/a2ui/renderers/
-!vendor/a2ui/renderers/lit/
-!vendor/a2ui/renderers/lit/**
+temp
