@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 const LOG_FILE = '/tmp/server.log';
 
@@ -30,6 +31,27 @@ const GATEWAY_BIND_HOST = process.env.OPENCLAW_GATEWAY_BIND || 'loopback';
 const GATEWAY_PROXY_HOST = process.env.OPENCLAW_GATEWAY_PROXY_HOST || '127.0.0.1';
 const GATEWAY_TARGET = `http://${GATEWAY_PROXY_HOST}:${INTERNAL_GATEWAY_PORT}`;
 const OPENCLAW_ENTRY = process.env.OPENCLAW_ENTRY || '/openclaw/dist/entry.js';
+
+// Security configuration
+// Pre-defined gateway token from environment (recommended for production)
+const PREDEFINED_GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN;
+// Allowed origins for CORS (comma-separated or JSON array)
+const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.OPENCLAW_ALLOWED_ORIGINS);
+// Rate limiting (simple in-memory, per-IP)
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.OPENCLAW_RATE_LIMIT || '100', 10);
+const rateLimitMap = new Map();
+
+function parseAllowedOrigins(origins) {
+  if (!origins) return null; // null means allow all (development mode)
+  try {
+    const parsed = JSON.parse(origins);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    // Comma-separated list
+    return origins.split(',').map(s => s.trim()).filter(Boolean);
+  }
+}
 
 log('[init] Configuration loaded');
 log('[init] PORT =', PORT);
@@ -91,8 +113,10 @@ async function ensureGatewayRunning() {
   }
   
   // Generate and set gateway auth token
-  const gatewayAuthToken = generateToken();
+  // Use predefined token from environment if available (recommended for production)
+  const gatewayAuthToken = PREDEFINED_GATEWAY_TOKEN || generateToken();
   log('[gateway] Setting gateway auth token...');
+  log('[gateway] Token source:', PREDEFINED_GATEWAY_TOKEN ? 'OPENCLAW_GATEWAY_TOKEN env' : 'auto-generated');
   const tokenProc = spawn('node', [
     OPENCLAW_ENTRY, 'config', 'set', 'gateway.auth.token', gatewayAuthToken
   ], {
@@ -219,8 +243,90 @@ function isConfigured() {
   }
 }
 
+// Rate limiting middleware
+function rateLimitMiddleware(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
+  
+  let entry = rateLimitMap.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    entry = { count: 0, windowStart: now };
+    rateLimitMap.set(ip, entry);
+  }
+  
+  entry.count++;
+  
+  if (entry.count > RATE_LIMIT_MAX_REQUESTS) {
+    log('[rate-limit] Blocked IP:', ip, 'count:', entry.count);
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+  
+  next();
+}
+
+// Clean up rate limit map periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, RATE_LIMIT_WINDOW_MS);
+
+// Origin validation middleware
+function originCheckMiddleware(req, res, next) {
+  if (!ALLOWED_ORIGINS) {
+    return next(); // No restriction in development mode
+  }
+  
+  const origin = req.headers.origin || req.headers.referer;
+  if (!origin) {
+    return next(); // Allow requests without origin (e.g., curl, mobile apps)
+  }
+  
+  try {
+    const originUrl = new URL(origin);
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => {
+      if (allowed.startsWith('http://') || allowed.startsWith('https://')) {
+        return origin.startsWith(allowed);
+      }
+      // Allow domain without protocol
+      return originUrl.hostname === allowed || originUrl.hostname.endsWith('.' + allowed);
+    });
+    
+    if (!isAllowed) {
+      log('[security] Blocked origin:', origin);
+      return res.status(403).json({ error: 'Origin not allowed' });
+    }
+  } catch (e) {
+    log('[security] Invalid origin:', origin);
+    return res.status(400).json({ error: 'Invalid origin' });
+  }
+  
+  next();
+}
+
+// Security headers middleware
+function securityHeadersMiddleware(req, res, next) {
+  res.removeHeader('X-Powered-By');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // HSTS for HTTPS
+  if (req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  next();
+}
+
 // Express app
 const app = express();
+app.use(securityHeadersMiddleware);
+app.use(rateLimitMiddleware);
+app.use(originCheckMiddleware);
 app.use(express.json());
 
 // Health check
