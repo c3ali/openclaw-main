@@ -17,9 +17,10 @@ coverage
 .agent
 .pi
 
-# Docs (except deployment docs needed for Railway)
+# Docs (except deployment and templates needed for Railway)
 docs/*
 !docs/deployment
+!docs/reference/templates
 
 # IDE
 .vscode
