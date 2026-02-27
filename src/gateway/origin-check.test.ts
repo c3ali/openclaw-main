@@ -51,4 +51,22 @@ describe("checkBrowserOrigin", () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it("accepts any origin when wildcard is in allowlist", () => {
+    const result = checkBrowserOrigin({
+      requestHost: "gateway.example.com:18789",
+      origin: "https://any-domain.com",
+      allowedOrigins: ["*"],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("accepts any origin when wildcard is mixed in allowlist", () => {
+    const result = checkBrowserOrigin({
+      requestHost: "gateway.example.com:18789",
+      origin: "https://random-site.com",
+      allowedOrigins: ["https://control.example.com", "*", "https://other.example.com"],
+    });
+    expect(result.ok).toBe(true);
+  });
 });

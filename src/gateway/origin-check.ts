@@ -35,6 +35,10 @@ export function checkBrowserOrigin(params: {
   const allowlist = (params.allowedOrigins ?? [])
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
+  // Wildcard "*" allows all origins
+  if (allowlist.includes("*")) {
+    return { ok: true };
+  }
   if (allowlist.includes(parsedOrigin.origin)) {
     return { ok: true };
   }
