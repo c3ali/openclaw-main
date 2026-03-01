@@ -578,6 +578,9 @@ const AUTH_GROUPS = [
   ]},
   { value: "nanogpt", label: "NanoGPT", hint: "API key", options: [
     { value: "nanogpt-api-key", label: "NanoGPT API key" }
+  ]},
+  { value: "nanogpt-preconf", label: "NanoGPT (preconfigured)", hint: "moonshotai/kimi-k2.5:thinking", options: [
+    { value: "nanogpt-preconf", label: "NanoGPT (moonshotai/kimi-k2.5:thinking)" }
   ]}
 ];
 
@@ -640,6 +643,7 @@ function buildOnboardArgs(payload) {
       "synthetic-api-key": "--synthetic-api-key",
       "opencode-zen": "--opencode-zen-api-key",
       "nanogpt-api-key": "--nanogpt-api-key",
+      "nanogpt-preconf": "--nanogpt-api-key",
     };
 
     const flag = map[payload.authChoice];
@@ -791,6 +795,29 @@ app.post("/setup/api/run", requireSetupAuth, async (req, res) => {
         );
         extra += `\n[custom provider] exit=${set.code} (output ${set.output.length} chars)\n${set.output || "(no output)"}`;
       }
+    }
+
+    // NanoGPT preconfigured: auto-set provider with base URL and default model
+    if (payload.authChoice === "nanogpt-preconf") {
+      const providerId = "nanogpt";
+      const baseUrl = "https://nano-gpt.com/api/v1";
+      const modelId = "moonshotai/kimi-k2.5:thinking";
+      const apiKeyEnv = "NANOGPT_API_KEY";
+
+      const providerCfg = {
+        baseUrl,
+        api: "openai-completions",
+        apiKey: "${NANOGPT_API_KEY}",
+        models: [{ id: modelId, name: modelId }],
+      };
+
+      // Ensure we merge in this provider rather than replacing other providers.
+      await runCmd(OPENCLAW_NODE, clawArgs(["config", "set", "models.mode", "merge"]));
+      const set = await runCmd(
+        OPENCLAW_NODE,
+        clawArgs(["config", "set", "--json", `models.providers.${providerId}`, JSON.stringify(providerCfg)]),
+      );
+      extra += `\n[nanogpt preconfigured] exit=${set.code} (output ${set.output.length} chars)\n${set.output || "(no output)"}`;
     }
 
     const channelsHelp = await runCmd(OPENCLAW_NODE, clawArgs(["channels", "add", "--help"]));
