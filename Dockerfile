@@ -21,8 +21,8 @@ RUN corepack enable
 WORKDIR /openclaw
 
 # Clone from official OpenClaw repository
-# Using main branch - update to use specific tag for stable deployments
-ARG OPENCLAW_GIT_REF=main
+# Using a released tag to avoid build breakage
+ARG OPENCLAW_GIT_REF=v2026.2.26
 RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/openclaw/openclaw.git .
 
 # Patch: relax version requirements for packages that may reference unpublished versions.
