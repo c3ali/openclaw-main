@@ -28,13 +28,9 @@ RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/c3ali/
 # Patch: relax version requirements for packages that may reference unpublished versions.
 # Apply to all extension package.json files to handle workspace protocol (workspace:*).
 RUN set -eux; \
-  find ./extensions -name 'package.json' -type f | while read -r f; do \
-  sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*\*"/"openclaw": "latest"/g' "$f"; \
-  sed -i -E 's/"openclaw":[[:space:]]*":[[:space:]]*"workspace:[^"]+"/"openclaw": "latest"/g' "$f"; \
-  done
-
-# Also patch the main workspace packages that reference openclaw
-RUN sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*\*"/"openclaw": "latest"/g' packages/clawdbot/package.json || true
+  find ./extensions -name 'package.json' -type f -exec sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*"/"openclaw":"latest"/g' {} \; ; \
+  find ./extensions -name 'package.json' -type f -exec sed -i -E 's/"openclaw":[[:space:]]*">=[^"]+"/"openclaw":"latest"/g' {} \; ; \
+  sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*"/"openclaw":"latest"/g' packages/clawdbot/package.json || true
 
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm build
