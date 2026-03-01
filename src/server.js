@@ -650,13 +650,11 @@ function buildOnboardArgs(payload) {
 
     // If the user picked an API-key auth choice but didn't provide a secret, fail fast.
     // Otherwise OpenClaw may fall back to its default auth choice, which looks like the
-    // wizard "reverted" their selection.
-    // Skip for nanogpt-preconf as it uses env var.
-    if (flag && !secret && payload.authChoice !== "nanogpt-preconf") {
+    if (flag && !secret) {
       throw new Error(`Missing auth secret for authChoice=${payload.authChoice}`);
     }
 
-    if (flag && payload.authChoice !== "nanogpt-preconf") {
+    if (flag) {
       args.push(flag, secret);
     }
 
