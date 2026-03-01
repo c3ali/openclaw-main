@@ -642,8 +642,8 @@ function buildOnboardArgs(payload) {
       "minimax-api-lightning": "--minimax-api-key",
       "synthetic-api-key": "--synthetic-api-key",
       "opencode-zen": "--opencode-zen-api-key",
-      "nanogpt-api-key": "--nanogpt-api-key",
-      "nanogpt-preconf": "--nanogpt-api-key",
+      "nanogpt-api-key": "--openai-api-key",
+      "nanogpt-preconf": "--openai-api-key",
     };
 
     const flag = map[payload.authChoice];
@@ -651,11 +651,12 @@ function buildOnboardArgs(payload) {
     // If the user picked an API-key auth choice but didn't provide a secret, fail fast.
     // Otherwise OpenClaw may fall back to its default auth choice, which looks like the
     // wizard "reverted" their selection.
-    if (flag && !secret) {
+    // Skip for nanogpt-preconf as it uses env var.
+    if (flag && !secret && payload.authChoice !== "nanogpt-preconf") {
       throw new Error(`Missing auth secret for authChoice=${payload.authChoice}`);
     }
 
-    if (flag) {
+    if (flag && payload.authChoice !== "nanogpt-preconf") {
       args.push(flag, secret);
     }
 
