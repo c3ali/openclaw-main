@@ -20,10 +20,10 @@ RUN corepack enable
 
 WORKDIR /openclaw
 
-# Clone from user's fork (c3ali/openclaw-main)
+# Clone from official OpenClaw repository
 # Using main branch - update to use specific tag for stable deployments
 ARG OPENCLAW_GIT_REF=main
-RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/c3ali/openclaw-main.git .
+RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/openclaw/openclaw.git .
 
 # Patch: relax version requirements for packages that may reference unpublished versions.
 # Apply to all extension package.json files to handle workspace protocol (workspace:*).
