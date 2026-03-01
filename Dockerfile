@@ -31,6 +31,7 @@ RUN set -eux; \
   find ./extensions -name 'package.json' -type f -exec sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*"/"openclaw":"*"/g' {} \; ; \
   find ./extensions -name 'package.json' -type f -exec sed -i -E 's/"openclaw":[[:space:]]*">=[^"]+"/"openclaw":"*"/g' {} \; ; \
   sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*"/"openclaw":"*"/g' packages/clawdbot/package.json || true
+sed -i -E 's/"openclaw":[[:space:]]*"workspace:\*"/"openclaw":"*"/g' packages/moltbot/package.json || true
 
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm build
