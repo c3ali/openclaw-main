@@ -575,6 +575,9 @@ const AUTH_GROUPS = [
   ]},
   { value: "opencode-zen", label: "OpenCode Zen", hint: "API key", options: [
     { value: "opencode-zen", label: "OpenCode Zen (multi-model proxy)" }
+  ]},
+  { value: "nanogpt", label: "NanoGPT", hint: "API key", options: [
+    { value: "nanogpt-api-key", label: "NanoGPT API key" }
   ]}
 ];
 
@@ -636,6 +639,7 @@ function buildOnboardArgs(payload) {
       "minimax-api-lightning": "--minimax-api-key",
       "synthetic-api-key": "--synthetic-api-key",
       "opencode-zen": "--opencode-zen-api-key",
+      "nanogpt-api-key": "--nanogpt-api-key",
     };
 
     const flag = map[payload.authChoice];
